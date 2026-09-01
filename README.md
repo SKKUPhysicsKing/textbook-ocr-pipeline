@@ -45,6 +45,12 @@ textbook-ocr "input/pages" -o output --lang eng --psm 3
 textbook-ocr --help
 ```
 
+## Google Colab에서 실행
+
+[Colab 노트북 열기](https://colab.research.google.com/github/SKKUPhysicsKing/textbook-ocr-pipeline/blob/main/notebooks/Textbook_OCR_Colab.ipynb)
+
+저장소가 Private이므로 Colab에서 GitHub 계정 접근 승인을 요구할 수 있습니다. 직접 링크가 열리지 않으면 GitHub에서 `notebooks/Textbook_OCR_Colab.ipynb`를 다운로드한 뒤 Colab의 **File → Upload notebook**으로 여세요. 노트북의 셀을 위에서부터 실행하고 이미지·PDF·ZIP을 업로드하면 결과 ZIP이 자동으로 다운로드됩니다. 별도의 GitHub 토큰은 입력하지 않습니다.
+
 ## 출력 구조
 
 ```text
