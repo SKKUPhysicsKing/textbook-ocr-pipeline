@@ -16,6 +16,8 @@
 
 Python 3.10 이상과 Tesseract 5가 필요합니다. Windows에서는 Tesseract 설치 프로그램에서 Korean language data를 선택하고 `tesseract.exe` 폴더를 `PATH`에 추가합니다.
 
+Windows에서 폴더 생성부터 가상환경, Tesseract 한글 데이터, 첫 OCR 실행까지 따라 하려면 [Windows 상세 설치 가이드](docs/windows-setup.md)를 확인하세요.
+
 ```powershell
 git clone https://github.com/SKKUPhysicsKing/textbook-ocr-pipeline.git
 cd textbook-ocr-pipeline

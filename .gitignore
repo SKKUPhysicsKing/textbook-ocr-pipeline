@@ -3,11 +3,12 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
+.firecrawl/
 .venv/
 venv/
 dist/
 build/
+input/
 output/
 *.log
 .DS_Store
-
