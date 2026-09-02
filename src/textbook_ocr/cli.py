@@ -10,12 +10,14 @@ from .preprocess import PreprocessConfig
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="textbook-ocr", description="Convert photographed textbook pages or PDFs to TXT and JSON.")
+    parser = argparse.ArgumentParser(prog="textbook-ocr", description="Convert photographed textbook pages or PDFs to structured TXT, Markdown and JSON.")
     parser.add_argument("input", type=Path, help="Image, PDF, or directory to process")
     parser.add_argument("-o", "--output", type=Path, default=Path("output"))
     parser.add_argument("--lang", default="eng", help="Tesseract languages (use kor+eng for mixed Korean/English pages)")
     parser.add_argument("--psm", type=int, default=3, help="Tesseract page segmentation mode")
     parser.add_argument("--column-psm", type=int, default=6, help="Tesseract PSM used for detected columns")
+    parser.add_argument("--table-psm", type=int, default=6, help="Tesseract PSM used for individual table cells")
+    parser.add_argument("--figure-psm", type=int, default=11, help="Tesseract PSM used for sparse labels inside figures")
     parser.add_argument("--pdf-dpi", type=int, default=300)
     parser.add_argument("--layout", choices=("auto", "single", "columns"), default="auto")
     parser.add_argument("--preprocess", choices=("raw", "grayscale", "binary"), default="raw")
@@ -23,6 +25,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-width", type=int, default=2400, help="Downscale pages wider than this; 0 disables resizing")
     parser.add_argument("--min-page-width", type=int, default=1600, help="Warn when an input page is narrower; 0 disables the warning")
     parser.add_argument("--low-confidence-threshold", type=float, default=70.0)
+    parser.add_argument("--visuals", choices=("off", "detect"), default="detect", help="Detect and export ruled tables and figures")
+    parser.add_argument("--min-visual-area-ratio", type=float, default=0.01, help="Minimum fraction of a page occupied by a detected table or figure")
     parser.add_argument("--threshold", type=int, choices=range(0, 256), metavar="0-255")
     parser.add_argument("--deskew", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--denoise", action=argparse.BooleanOptionalAction, default=False)
@@ -39,11 +43,15 @@ def main(argv: list[str] | None = None) -> None:
         language=args.lang,
         psm=args.psm,
         column_psm=args.column_psm,
+        table_psm=args.table_psm,
+        figure_psm=args.figure_psm,
         pdf_dpi=args.pdf_dpi,
         save_processed=args.save_processed,
         layout=args.layout,
         min_page_width=args.min_page_width,
         low_confidence_threshold=args.low_confidence_threshold,
+        visuals=args.visuals,
+        min_visual_area_ratio=args.min_visual_area_ratio,
         preprocess=PreprocessConfig(
             mode=args.preprocess,
             upscale_width=args.upscale_width,
