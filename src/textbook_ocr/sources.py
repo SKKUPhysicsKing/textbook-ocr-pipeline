@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from pathlib import Path
 
-import fitz
+import pymupdf as fitz
 from PIL import Image
 
 from .models import PageInput
