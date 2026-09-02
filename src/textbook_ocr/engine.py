@@ -18,9 +18,10 @@ class TesseractError(RuntimeError):
 
 
 class TesseractEngine:
-    def __init__(self, language: str = "kor+eng", psm: int = 3) -> None:
+    def __init__(self, language: str = "eng", psm: int = 3) -> None:
         self.language = language
         self.psm = psm
+        self._validated_executable: str | None = None
 
     def _executable(self) -> str:
         executable = shutil.which("tesseract")
@@ -36,8 +37,11 @@ class TesseractEngine:
             raise TesseractError("Missing Tesseract language data: " + ", ".join(missing))
 
     def recognize(self, image: Image.Image) -> OcrResult:
-        executable = self._executable()
-        self._check_languages(executable)
+        executable = self._validated_executable
+        if executable is None:
+            executable = self._executable()
+            self._check_languages(executable)
+            self._validated_executable = executable
         with tempfile.TemporaryDirectory(prefix="textbook-ocr-") as temporary_dir:
             image_path = Path(temporary_dir) / "page.png"
             image.save(image_path)
@@ -48,7 +52,10 @@ class TesseractEngine:
 
 
 def _parse_tsv(lines: Iterable[str]) -> OcrResult:
-    reader = csv.DictReader(lines, delimiter="\t")
+    # Tesseract TSV is tab-delimited but not CSV-quoted. OCR text can contain an
+    # unmatched double quote; the csv module's default quote handling would then
+    # merge many physical TSV rows into one corrupted token.
+    reader = csv.DictReader(lines, delimiter="\t", quoting=csv.QUOTE_NONE)
     words: list[OcrWord] = []
     grouped: dict[tuple[int, int, int], list[str]] = defaultdict(list)
     for row in reader:
@@ -73,4 +80,3 @@ def _parse_tsv(lines: Iterable[str]) -> OcrResult:
         output_lines.append(" ".join(tokens))
         previous_paragraph = current_paragraph
     return OcrResult("\n".join(output_lines).strip(), tuple(words))
-

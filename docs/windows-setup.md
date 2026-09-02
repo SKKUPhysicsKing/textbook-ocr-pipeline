@@ -29,7 +29,7 @@
 2. 64-bit Git for Windows를 설치합니다.
 3. 특별히 변경할 이유가 없다면 설치 옵션은 기본값을 유지합니다.
 
-Private GitHub 저장소를 처음 복제할 때 브라우저 로그인 창이 열릴 수 있습니다. 본인의 `SKKUPhysicsKing` 계정으로 승인하면 됩니다.
+이 프로젝트는 공개 저장소이므로 복제할 때 GitHub 로그인은 필요하지 않습니다.
 
 ### 1-3. Tesseract OCR
 
@@ -112,7 +112,7 @@ git clone https://github.com/SKKUPhysicsKing/textbook-ocr-pipeline.git
 cd textbook-ocr-pipeline
 ```
 
-Private 저장소이므로 GitHub 로그인이 필요할 수 있습니다. 브라우저가 열리면 본인의 GitHub 계정으로 승인합니다.
+공개 저장소이므로 GitHub 로그인 없이 복제할 수 있습니다.
 
 현재 폴더가 맞는지 확인합니다.
 
@@ -126,8 +126,8 @@ Get-ChildItem
 ### `Repository not found`가 표시될 때
 
 - 브라우저에서 `https://github.com/SKKUPhysicsKing/textbook-ocr-pipeline`가 열리는지 확인합니다.
-- GitHub에 다른 계정으로 로그인되어 있지 않은지 확인합니다.
-- Windows의 **자격 증명 관리자 → Windows 자격 증명**에서 잘못 저장된 GitHub 자격 증명이 있다면 제거한 뒤 `git clone`을 다시 실행합니다.
+- 저장소 주소를 오타 없이 복사했는지 확인합니다.
+- 회사나 학교 네트워크에서 GitHub 접속이 차단되지 않았는지 확인합니다.
 
 Git 명령이 계속 어렵다면 GitHub 저장소 페이지의 **Code → Download ZIP**으로 내려받고 `%USERPROFILE%\Projects`에 압축을 풀어도 실행할 수 있습니다. 다만 이 방법은 이후 `git pull`로 자동 업데이트할 수 없습니다.
 
@@ -208,12 +208,9 @@ python -m unittest discover -s tests -v
 
 마지막에 다음과 비슷하게 표시되어야 합니다.
 
-```text
-Ran 2 tests
-OK
-```
+마지막 줄에 `OK`가 표시되면 정상입니다. 테스트 개수는 프로젝트 업데이트에 따라 달라질 수 있습니다.
 
-이 테스트는 파일 처리와 결과 생성 흐름을 검사합니다. 실제 한국어 인식 가능 여부는 다음 명령으로 별도 확인합니다.
+이 테스트는 파일 처리, TSV 파싱, 전처리와 2단 레이아웃 검출을 검사합니다. 실제 한국어 인식 가능 여부는 다음 명령으로 별도 확인합니다.
 
 ```powershell
 tesseract --list-langs
@@ -228,7 +225,7 @@ New-Item -ItemType Directory -Force input
 explorer .\input
 ```
 
-열린 파일 탐색기 창에 교재 사진이나 PDF를 복사합니다. 지원 형식은 JPG, JPEG, PNG, TIFF, BMP, WebP, PDF입니다. 파일은 촬영 순서대로 정렬될 수 있도록 다음과 같이 이름을 지정하는 것이 좋습니다.
+열린 파일 탐색기 창에 교재 사진이나 PDF를 복사합니다. 지원 형식은 JPG, JPEG, PNG, TIFF, BMP, WebP, PDF입니다. 메신저 압축본 대신 카메라 원본을 사용하고, 2단 교재는 페이지 폭 1600 px 이상을 권장합니다. 파일은 촬영 순서대로 정렬될 수 있도록 다음과 같이 이름을 지정하는 것이 좋습니다.
 
 ```text
 page_001.jpg
@@ -243,6 +240,8 @@ page_003.jpg
 ```powershell
 textbook-ocr ".\input" -o ".\output" --save-processed
 ```
+
+기본값은 영문 교재에 맞춘 `eng`, 원본 보존 전처리(`raw`), 2단 자동 검출(`auto`)입니다. 실행 중 `low_resolution` 경고가 나오면 OCR은 계속되지만 원본 해상도가 낮다는 뜻입니다.
 
 완료되면 결과 폴더를 엽니다.
 
@@ -277,10 +276,34 @@ PDF가 너무 크거나 메모리가 부족하면 해상도를 낮춥니다.
 textbook-ocr ".\input\textbook.pdf" -o ".\output" --pdf-dpi 200
 ```
 
-### 영문만 처리
+### 한글과 영어가 섞인 문서
 
 ```powershell
-textbook-ocr ".\input" -o ".\output" --lang eng --save-processed
+textbook-ocr ".\input" -o ".\output" --lang kor+eng --save-processed
+```
+
+### 2단 편집을 직접 지정
+
+자동 검출이 실패하면 다음처럼 열 분리를 강제로 지정합니다.
+
+```powershell
+textbook-ocr ".\input" -o ".\output" --layout columns --column-psm 6 --save-processed
+```
+
+반대로 표나 그림 때문에 잘못 분리되면 단일 페이지 모드를 사용합니다.
+
+```powershell
+textbook-ocr ".\input" -o ".\output" --layout single --save-processed
+```
+
+### 전처리 비교
+
+기본 `raw` 결과가 좋지 않을 때만 그레이스케일 또는 이진화를 비교합니다.
+
+```powershell
+textbook-ocr ".\input" -o ".\output-gray" --preprocess grayscale
+textbook-ocr ".\input" -o ".\output-binary" --preprocess binary --threshold 170
+textbook-ocr ".\input" -o ".\output-upscaled" --upscale-width 1600
 ```
 
 ## 9. 다음에 다시 실행할 때

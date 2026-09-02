@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 from PIL import Image, ImageFilter, ImageOps
@@ -8,11 +9,13 @@ from PIL import Image, ImageFilter, ImageOps
 
 @dataclass(frozen=True)
 class PreprocessConfig:
+    mode: Literal["raw", "grayscale", "binary"] = "raw"
+    upscale_width: int = 0
     max_width: int = 2400
-    denoise: bool = True
+    denoise: bool = False
     autocontrast: bool = True
     threshold: int | None = None
-    deskew: bool = True
+    deskew: bool = False
     max_skew_degrees: float = 4.0
     skew_step: float = 0.5
 
@@ -66,19 +69,41 @@ def estimate_skew(binary: Image.Image, max_degrees: float = 4.0, step: float = 0
 
 def preprocess_image(image: Image.Image, config: PreprocessConfig | None = None) -> Image.Image:
     config = config or PreprocessConfig()
-    image = ImageOps.exif_transpose(image).convert("L")
-    if config.max_width > 0 and image.width > config.max_width:
+    if config.mode not in {"raw", "grayscale", "binary"}:
+        raise ValueError(f"Unsupported preprocessing mode: {config.mode}")
+
+    image = ImageOps.exif_transpose(image)
+    if config.upscale_width > 0 and image.width < config.upscale_width:
+        ratio = config.upscale_width / image.width
+        image = image.resize((config.upscale_width, max(1, round(image.height * ratio))), Image.Resampling.LANCZOS)
+    elif config.max_width > 0 and image.width > config.max_width:
         ratio = config.max_width / image.width
         image = image.resize((config.max_width, max(1, round(image.height * ratio))), Image.Resampling.LANCZOS)
+
+    # Tesseract already performs its own binarization. Keeping the photographed
+    # page intact is a safer default for thin serifs, punctuation and exponents.
+    if config.mode == "raw":
+        return image.convert("RGB")
+
+    image = image.convert("L")
     if config.denoise:
         image = image.filter(ImageFilter.MedianFilter(size=3))
     if config.autocontrast:
         image = ImageOps.autocontrast(image, cutoff=1)
+
+    if config.mode == "grayscale" and not config.deskew:
+        return image
+
     threshold = config.threshold if config.threshold is not None else _otsu_threshold(image)
     binary = image.point(lambda pixel: 255 if pixel > threshold else 0, mode="1").convert("L")
+
     if config.deskew:
         angle = estimate_skew(binary, max_degrees=config.max_skew_degrees, step=config.skew_step)
         if abs(angle) >= config.skew_step / 2:
-            binary = binary.rotate(angle, resample=Image.Resampling.BICUBIC, expand=True, fillcolor=255)
-    return binary
+            target = binary if config.mode == "binary" else image
+            target = target.rotate(angle, resample=Image.Resampling.BICUBIC, expand=True, fillcolor=255)
+            if config.mode == "grayscale":
+                return target
+            binary = target
 
+    return binary if config.mode == "binary" else image

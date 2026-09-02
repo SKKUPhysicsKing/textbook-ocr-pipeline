@@ -29,8 +29,10 @@ class PipelineTest(unittest.TestCase):
             self.assertTrue((output / "processed" / "page_0001.png").exists())
             saved = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(saved["pages"][0]["mean_confidence"], 99.0)
+            self.assertEqual(saved["pages"][0]["layout"], "single")
+            self.assertTrue(saved["pages"][0]["warnings"][0].startswith("low_resolution:"))
+            self.assertEqual(saved["preprocess"], "raw")
 
 
 if __name__ == "__main__":
     unittest.main()
-

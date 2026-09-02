@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "textbook-ocr-pipeline"
-version = "0.1.0"
+version = "0.2.0"
 description = "A local OCR pipeline for photographed textbook pages and PDFs"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -26,4 +26,3 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-
